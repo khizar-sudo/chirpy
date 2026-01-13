@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"sync/atomic"
@@ -18,32 +17,17 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	})
 }
 
-func (cfg *apiConfig) getMetrics(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	fmt.Fprintf(w, "Hits: %d", cfg.fileserverHits.Load())
-}
-
-func (cfg *apiConfig) resetMetrics(w http.ResponseWriter, req *http.Request) {
-	cfg.fileserverHits.Store(0)
-}
-
 func main() {
 	cfg := apiConfig{}
 	mux := http.NewServeMux()
 	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("GET /healthz", healthCheck)
-	mux.HandleFunc("GET /metrics", cfg.getMetrics)
-	mux.HandleFunc("POST /reset", cfg.resetMetrics)
+	mux.HandleFunc("GET /api/healthz", healthCheck)
+	mux.HandleFunc("GET /admin/metrics", cfg.getMetrics)
+	mux.HandleFunc("POST /admin/reset", cfg.resetMetrics)
 
 	server := http.Server{
 		Handler: mux,
 		Addr:    ":8080",
 	}
 	log.Fatal(server.ListenAndServe())
-}
-
-func healthCheck(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
 }
