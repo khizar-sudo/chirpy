@@ -5,14 +5,24 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync/atomic"
 
 	"github.com/joho/godotenv"
-	"github.com/khizar-sudo/chirpy/internal/config"
 	"github.com/khizar-sudo/chirpy/internal/database"
-	"github.com/khizar-sudo/chirpy/internal/handlers"
-	"github.com/khizar-sudo/chirpy/internal/middleware"
 	_ "github.com/lib/pq"
 )
+
+type apiConfig struct {
+	fileserverHits atomic.Int32
+	db             *database.Queries
+}
+
+func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cfg.fileserverHits.Add(1)
+		next.ServeHTTP(w, r)
+	})
+}
 
 func main() {
 	godotenv.Load()
@@ -22,16 +32,15 @@ func main() {
 		log.Fatal(err)
 	}
 
-	cfg := &config.ApiConfig{
-		DB: database.New(db),
+	cfg := apiConfig{
+		db: database.New(db),
 	}
-
 	mux := http.NewServeMux()
-	mux.Handle("/app/", middleware.MetricsInc(cfg)(http.StripPrefix("/app", http.FileServer(http.Dir("./static")))))
-	mux.HandleFunc("GET /api/healthz", handlers.HealthCheck)
-	mux.HandleFunc("GET /admin/metrics", handlers.GetMetrics(cfg))
-	mux.HandleFunc("POST /admin/reset", handlers.ResetMetrics(cfg))
-	mux.HandleFunc("POST /api/validate_chirp", handlers.ValidateChirp)
+	mux.Handle("/app/", cfg.middlewareMetricsInc(http.StripPrefix("/app", http.FileServer(http.Dir(".")))))
+	mux.HandleFunc("GET /api/healthz", healthCheck)
+	mux.HandleFunc("GET /admin/metrics", cfg.getMetrics)
+	mux.HandleFunc("POST /admin/reset", cfg.resetMetrics)
+	mux.HandleFunc("POST /api/validate_chirp", validateChirp)
 
 	server := http.Server{
 		Handler: mux,

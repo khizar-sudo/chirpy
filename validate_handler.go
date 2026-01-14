@@ -1,4 +1,4 @@
-package handlers
+package main
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/khizar-sudo/chirpy/internal/response"
+	"github.com/khizar-sudo/chirpy/utils"
 )
 
 type validateBody struct {
@@ -17,18 +17,18 @@ type validateResponse struct {
 	CleanedBody string `json:"cleaned_body"`
 }
 
-func ValidateChirp(w http.ResponseWriter, req *http.Request) {
+func validateChirp(w http.ResponseWriter, req *http.Request) {
 	decoder := json.NewDecoder(req.Body)
 	body := validateBody{}
 	w.Header().Set("Content-Type", "application/json")
 
 	if err := decoder.Decode(&body); err != nil {
-		response.RespondWithError(w, 500, fmt.Sprintf("Error decoding parameters: %s\n", err), err)
+		utils.RespondWithError(w, 500, fmt.Sprintf("Error decoding parameters: %s\n", err), err)
 		return
 	}
 
 	if len(body.Body) > 140 {
-		response.RespondWithError(w, 400, "Chirp is too long", nil)
+		utils.RespondWithError(w, 400, "Chirp is too long", nil)
 		return
 	}
 
@@ -45,7 +45,7 @@ func ValidateChirp(w http.ResponseWriter, req *http.Request) {
 		CleanedBody: strings.Join(words, " "),
 	})
 	if err != nil {
-		response.RespondWithError(w, 500, err.Error(), err)
+		utils.RespondWithError(w, 500, err.Error(), err)
 	}
 	w.Write(data)
 

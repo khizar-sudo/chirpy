@@ -9,7 +9,6 @@
 *.dylib
 out
 chirpy
-api
 
 # Test binary, built with `go test -c`
 *.test
