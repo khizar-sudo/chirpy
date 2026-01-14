@@ -24,7 +24,7 @@ func (cfg *apiConfig) getMetrics(w http.ResponseWriter, req *http.Request) {
 func (cfg *apiConfig) resetMetrics(w http.ResponseWriter, req *http.Request) {
 	platform := os.Getenv("PLATFORM")
 	if platform != "dev" {
-		w.WriteHeader(403)
+		utils.RespondWithError(w, http.StatusForbidden, "Forbidden", nil)
 		return
 	}
 
@@ -33,7 +33,8 @@ func (cfg *apiConfig) resetMetrics(w http.ResponseWriter, req *http.Request) {
 	err := cfg.db.DeleteAllUsers(req.Context())
 	if err != nil {
 		utils.RespondWithError(w, http.StatusInternalServerError, "Could not delete users", err)
+		return
 	}
 
-	w.WriteHeader(200)
+	w.WriteHeader(http.StatusOK)
 }

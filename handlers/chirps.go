@@ -1,8 +1,9 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -31,12 +32,17 @@ func createChirp(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) 
 		body := chirpRequest{}
 
 		if err := decoder.Decode(&body); err != nil {
-			utils.RespondWithError(w, 500, fmt.Sprintf("Error decoding parameters: %s\n", err), err)
+			utils.RespondWithError(w, http.StatusBadRequest, "Invalid request body", err)
+			return
+		}
+
+		if body.Body == "" || body.UserID == (uuid.UUID{}) {
+			utils.RespondWithError(w, http.StatusBadRequest, "Body and User ID are required", nil)
 			return
 		}
 
 		if len(body.Body) > 140 {
-			utils.RespondWithError(w, 400, "Chirp is too long", nil)
+			utils.RespondWithError(w, http.StatusBadRequest, "Chirp is too long", nil)
 			return
 		}
 
@@ -102,7 +108,11 @@ func getChirp(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) {
 
 		chirp, err := cfg.db.GetChrip(req.Context(), chirpUUID)
 		if err != nil {
-			utils.RespondWithError(w, http.StatusNotFound, "Chirp not found", err)
+			if errors.Is(err, sql.ErrNoRows) {
+				utils.RespondWithError(w, http.StatusNotFound, "Chirp not found", nil)
+			} else {
+				utils.RespondWithError(w, http.StatusInternalServerError, "Could not fetch chirp", err)
+			}
 			return
 		}
 
