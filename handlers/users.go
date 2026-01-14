@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/khizar-sudo/chirpy/utils"
+	"github.com/khizar-sudo/chirpy/internal/utils"
 )
 
 type userRequest struct {

@@ -7,7 +7,7 @@ import (
 	"sync/atomic"
 
 	"github.com/khizar-sudo/chirpy/internal/database"
-	"github.com/khizar-sudo/chirpy/utils"
+	"github.com/khizar-sudo/chirpy/internal/utils"
 )
 
 type apiConfig struct {

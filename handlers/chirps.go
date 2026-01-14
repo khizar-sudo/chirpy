@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/khizar-sudo/chirpy/utils"
+	"github.com/khizar-sudo/chirpy/internal/utils"
 )
 
 type validateBody struct {
