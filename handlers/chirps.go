@@ -40,13 +40,7 @@ func validateChirp(w http.ResponseWriter, req *http.Request) {
 		}
 	}
 
-	w.WriteHeader(http.StatusOK)
-	data, err := json.Marshal(validateResponse{
+	utils.RespondWithJSON(w, http.StatusOK, validateResponse{
 		CleanedBody: strings.Join(words, " "),
 	})
-	if err != nil {
-		utils.RespondWithError(w, 500, err.Error(), err)
-	}
-	w.Write(data)
-
 }
