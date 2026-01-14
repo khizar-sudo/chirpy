@@ -54,9 +54,59 @@ func createChirp(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) 
 		})
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not create chirp", err)
+			return
 		}
 
 		utils.RespondWithJSON(w, http.StatusCreated, chirpResponse{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		})
+	}
+}
+
+func getAllChirps(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		chirps, err := cfg.db.GetAllChrips(req.Context())
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not fetch chirps", err)
+			return
+		}
+
+		response := make([]chirpResponse, len(chirps))
+		for i, chirp := range chirps {
+			response[i] = chirpResponse{
+				ID:        chirp.ID,
+				CreatedAt: chirp.CreatedAt,
+				UpdatedAt: chirp.UpdatedAt,
+				Body:      chirp.Body,
+				UserID:    chirp.UserID,
+			}
+		}
+
+		utils.RespondWithJSON(w, http.StatusOK, response)
+	}
+}
+
+func getChirp(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) {
+	return func(w http.ResponseWriter, req *http.Request) {
+		chirpID := req.PathValue("chirpID")
+
+		chirpUUID, err := uuid.Parse(chirpID)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusBadRequest, "Invalid chirp ID", err)
+			return
+		}
+
+		chirp, err := cfg.db.GetChrip(req.Context(), chirpUUID)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusNotFound, "Chirp not found", err)
+			return
+		}
+
+		utils.RespondWithJSON(w, http.StatusOK, chirpResponse{
 			ID:        chirp.ID,
 			CreatedAt: chirp.CreatedAt,
 			UpdatedAt: chirp.UpdatedAt,
