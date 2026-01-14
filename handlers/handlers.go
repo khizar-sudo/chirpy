@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -11,20 +10,6 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/khizar-sudo/chirpy/internal/database"
 )
-
-type apiConfig struct {
-	fileserverHits atomic.Int32
-	db             *database.Queries
-}
-
-func (cfg *apiConfig) getMetrics(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprintf(w, "<html><body><h1>Welcome, Chirpy Admin</h1><p>Chirpy has been visited %d times!</p></body></html>", cfg.fileserverHits.Load())
-}
-
-func (cfg *apiConfig) resetMetrics(w http.ResponseWriter, req *http.Request) {
-	cfg.fileserverHits.Store(0)
-}
 
 func Init() {
 	godotenv.Load()
@@ -48,6 +33,7 @@ func Init() {
 	mux.HandleFunc("GET /admin/metrics", cfg.getMetrics)
 	mux.HandleFunc("POST /admin/reset", cfg.resetMetrics)
 	mux.HandleFunc("POST /api/validate_chirp", validateChirp)
+	// mux.HandleFunc("POST /api/users", createUser)
 
 	server := http.Server{
 		Handler: mux,
