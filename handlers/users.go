@@ -23,7 +23,6 @@ type userResponse struct {
 func createUser(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		body := userRequest{}
-		w.Header().Set("Content-Type", "application/json")
 
 		decoder := json.NewDecoder(req.Body)
 		if err := decoder.Decode(&body); err != nil {
