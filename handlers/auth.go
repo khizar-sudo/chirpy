@@ -13,8 +13,9 @@ import (
 )
 
 type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	ExpiresInSeconds *int   `json:"expires_in_seconds,omitempty"`
 }
 
 type loginResponse struct {
@@ -22,6 +23,7 @@ type loginResponse struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
+	Token     string    `json:"token"`
 }
 
 func login(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) {
@@ -60,11 +62,25 @@ func login(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 
+		var expiresIn time.Duration
+		if body.ExpiresInSeconds == nil || *body.ExpiresInSeconds > 3600 {
+			expiresIn = time.Hour
+		} else {
+			expiresIn = time.Second * time.Duration(*body.ExpiresInSeconds)
+		}
+
+		token, err := auth.MakeJWT(user.ID, cfg.tokenSecret, expiresIn)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusInternalServerError, "Could not make token", err)
+			return
+		}
+
 		utils.RespondWithJSON(w, http.StatusOK, loginResponse{
 			ID:        user.ID,
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
 			Email:     user.Email,
+			Token:     token,
 		})
 	}
 }

@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"sync/atomic"
 
 	"github.com/khizar-sudo/chirpy/internal/database"
@@ -14,6 +13,7 @@ type apiConfig struct {
 	fileserverHits atomic.Int32
 	db             *database.Queries
 	platform       string
+	tokenSecret    string
 }
 
 func (cfg *apiConfig) getMetrics(w http.ResponseWriter, req *http.Request) {
@@ -22,8 +22,7 @@ func (cfg *apiConfig) getMetrics(w http.ResponseWriter, req *http.Request) {
 }
 
 func (cfg *apiConfig) resetMetrics(w http.ResponseWriter, req *http.Request) {
-	platform := os.Getenv("PLATFORM")
-	if platform != "dev" {
+	if cfg.platform != "dev" {
 		utils.RespondWithError(w, http.StatusForbidden, "Forbidden", nil)
 		return
 	}

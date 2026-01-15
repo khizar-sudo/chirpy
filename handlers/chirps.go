@@ -9,13 +9,13 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/khizar-sudo/chirpy/internal/auth"
 	"github.com/khizar-sudo/chirpy/internal/database"
 	"github.com/khizar-sudo/chirpy/internal/utils"
 )
 
 type chirpRequest struct {
-	Body   string    `json:"body"`
-	UserID uuid.UUID `json:"user_id"`
+	Body string `json:"body"`
 }
 
 type chirpResponse struct {
@@ -28,6 +28,16 @@ type chirpResponse struct {
 
 func createChirp(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
+		token, err := auth.GetBearerToken(req.Header)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusUnauthorized, "No token provided", err)
+		}
+
+		userID, err := auth.ValidateJWT(token, cfg.tokenSecret)
+		if err != nil {
+			utils.RespondWithError(w, http.StatusUnauthorized, "Could not validate token", err)
+		}
+
 		decoder := json.NewDecoder(req.Body)
 		body := chirpRequest{}
 
@@ -36,7 +46,7 @@ func createChirp(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) 
 			return
 		}
 
-		if body.Body == "" || body.UserID == (uuid.UUID{}) {
+		if body.Body == "" {
 			utils.RespondWithError(w, http.StatusBadRequest, "Body and User ID are required", nil)
 			return
 		}
@@ -56,7 +66,7 @@ func createChirp(cfg *apiConfig) func(w http.ResponseWriter, req *http.Request) 
 
 		chirp, err := cfg.db.CreateChirp(req.Context(), database.CreateChirpParams{
 			Body:   strings.Join(words, " "),
-			UserID: body.UserID,
+			UserID: userID,
 		})
 		if err != nil {
 			utils.RespondWithError(w, http.StatusInternalServerError, "Could not create chirp", err)
